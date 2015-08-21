@@ -1,0 +1,56 @@
+#!/bin/bash   
+
+declare error
+
+remove_site(){
+	echo "Let's delete site :)"
+	read -p "Name of site: " name
+	clear
+	if [ -z "$name"  ]
+		then error="Empty sitename!\n" start_error;		
+	fi	
+	echo "So, let's delete site with name -" $name	
+	delete_folder;
+	echo "Deleteing config file ..."
+	delete_config;
+	echo "Unregister site";
+	unregister;
+	echo "Restarting Apache"
+	restart_apache;	
+	echo "Site has deleted!"
+	exit;
+}
+
+delete_folder(){
+	if [ ! -d "/var/www/$name" ]
+		then error="Nothing to delete!"
+			 start_error;
+	fi 		
+	sudo rm -r /var/www/$name	
+}
+
+start_error(){
+	echo $error
+	exit;
+}
+
+delete_config(){
+	if [ ! -f /etc/apache2/sites-available/$name.conf ]
+		then error="Undefined config file" 
+			 start_error;
+	fi
+	sudo rm /etc/apache2/sites-available/$name.conf
+}
+
+unregister(){
+	sudo a2dissite $name
+}
+
+restart_apache(){
+	sudo service apache2 restart
+	echo "Apache has restarted!"
+}
+
+
+
+remove_site;

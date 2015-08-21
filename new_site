@@ -1,0 +1,73 @@
+#!/bin/bash   
+
+declare error
+
+add_site(){
+	echo "Let's add new site :)"
+	read -p "Name of site: " name
+	clear
+	if [ -z "$name"  ]
+		then start_error;		
+	fi	
+	echo "So, let's create site with name -" $name	
+	make_folder;
+	echo "Creating config file ..."
+	make_config;
+	echo "Registering website"
+	register_site;
+	echo "Restarting Apache"
+	restart_apache;
+	echo "Adding to Host"
+	add_to_host;
+	echo "Adding index page"
+	add_index_page;
+	echo "Success!"
+	exit;
+}
+
+make_folder(){
+	if [ -d "/var/www/$name" ]	    
+		then error="Site $name already exists" 
+			 start_error;
+	fi
+	sudo mkdir /var/www/$name
+	sudo mkdir /var/www/$name/public_html
+	sudo chown -R $USER:$USER /var/www/$name
+}
+
+start_error(){
+	echo "$error"
+	exit;
+}
+
+make_config(){
+	if [ -f /etc/apache2/sites-available/$name.conf ]		
+		then error="Config file /etc/apache2/sites-avaiable/$name.conf already exists" 
+		     start_error;
+	fi	
+	
+	printf '<VirtualHost *:80>\n ServerName %s \n ServerAlias www.%s \n ServerAdmin webmaster@localhost \n DocumentRoot /var/www/%s/public_html \n ErrorLog ${APACHE_LOG_DIR}/error.log \n CustomLog ${APACHE_LOG_DIR}/access.log combined \n </VirtualHost> \n # vim: syntax=apache ts=4 sw=4 sts=4 sr noet' $name $name $name | sudo tee /etc/apache2/sites-available/$name.conf
+	echo "Config file - /etc/apache2/sites-avaiable/$name.conf was created"
+}
+
+register_site(){
+	sudo a2ensite $name
+	echo "Site has registered"
+}
+
+restart_apache(){
+	sudo service apache2 restart
+	echo "Apache has restarted!"
+}
+
+add_to_host(){
+	printf '\n127.0.0.1 %s\n' $name | sudo tee -a /etc/hosts
+	echo "Added to Hosts" 
+}
+
+add_index_page(){
+	printf '<?php echo "<h1>Index Page</h1>"; ?>' | tee /var/www/$name/public_html/index.php
+	echo "Index file was added!"
+}
+
+add_site;
